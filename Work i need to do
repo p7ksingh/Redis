@@ -1,0 +1,3 @@
+Step 1: write a client application those push data to elasticache. 
+Step 2: Setup data in elasticache with timestamp . 
+Step 3: Now write a Shell script into AWS Lambda for deleting data whose Timestamp more than 2 hr by using help of AWS Cloudwatch. 
