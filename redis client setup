@@ -1,0 +1,79 @@
+Installs the Extra Packages for Enterprise Linux (EPEL)
+Installs the Extra Packages for Enterprise Linux (EPEL) repository on an Amazon Linux system. EPEL provides additional software packages that are not included in the default Amazon Linux repositories.
+sudo amazon-linux-extras install epel -y
+install required packgaes and dependencies
+Installs various development libraries and tools that are necessary for building and running Redis. These include the GNU Compiler Collection (GCC), Jemalloc (a memory allocator), OpenSSL development libraries, and Tcl (Tool Command Language) along with its development libraries.
+sudo yum install gcc jemalloc-devel openssl-devel tcl tcl-devel -y
+Download Source Code and unzip
+Downloads the Redis source code archive (redis-stable.tar.gz) from the official Redis website.
+sudo wget http://download.redis.io/redis-stable.tar.gz
+sudo tar xvzf redis-stable.tar.gz
+cd redis-stable
+build redis
+Builds Redis from the source code. The BUILD_TLS=yes option indicates that Redis should be built with support for Transport Layer Security (TLS), which is used for secure communication.
+sudo make BUILD_TLS=yes
+Grant Executable Permissions
+Grants execute (+x) permission to the Redis command-line interface (redis-cli) binary. This allows the binary to be executed as a program. Copies the Redis CLI binary (redis-cli) to the /usr/bin/ directory. Placing it in this directory allows you to run redis-cli from any location in the terminal without specifying the full path.
+chmod a+x /src/redis-cli
+cp /src/redis-cli /usr/bin/
+Connect to Redis Cluster
+Invokes the Redis command-line interface, connecting to a Redis server with the following options:
+-h: Specifies the hostname or IP address of the Redis server (your-cluster-info.cache.amazonaws.com).
+-tls: Enables TLS for secure communication.
+-a: Provides the authentication password (YOURPASSWORD).
+-p: Specifies the port number (6379) on which the Redis server is running.
+redis-cli -h your-cluster-info.cache.amazonaws.com -tls -a YOURPASSWORD -p 6379
+If you want to use IAM authentication to connect to the Redis cluster, Follow below steps.
+
+Install Java, Git and naven
+Install Git, Java and Mavaen to Clone and build AWS sample application
+sudo amazon-linux-extras install java-openjdk11 -y
+sudo yum install java-1.8.0-openjdk-devel -y
+sudo update-alternatives --config java
+Setup JAVA_HOME
+echo $JAVA_HOME
+export  JAVA_HOME='/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.392.b08-2.amzn2.0.1.x86_64/jre'
+PATH=$JAVA_HOME/bin:$PATH
+export PATH
+source ~/.bashrc
+Install Git to clone the Sample application
+yum install git -y
+Maven Installation
+
+sudo wget http://repos.fedorapeople.org/repos/dchen/apache-maven/epel-apache-maven.repo -O /etc/yum.repos.d/epel-apache-maven.repo
+sudo sed -i s/\$releasever/6/g /etc/yum.repos.d/epel-apache-maven.repo
+sudo yum install -y apache-maven
+mvn --version
+git clone https://github.com/aws-samples/elasticache-iam-auth-demo-app.git
+cd elasticache-iam-auth-demo-app
+mvn dependency:resolve-plugins
+Prepare the build
+mvn clean install
+Make sure you create an IAM role and attach the role to your ec2 instance.
+Role should have policy to connect to cluster. Refer the sample IAM policy attached to the role. Note: I have added wildcard for most of the Resources, You can limit to the users and replication groups.
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": "elasticache:Connect",
+            "Resource": [
+                "arn:aws:elasticache:*:123456789123:user:*",
+                "arn:aws:elasticache:*:123456789123:serverlesscache:*",
+                "arn:aws:elasticache:*:123456789123:replicationgroup:*"
+            ]
+        }
+    ]
+}
+get your cluster info.
+Now Create Users and Groups, then proceed to connect to the cluster*
+
+Replace with your created cluster name, username
+
+Get the required token to connect
+
+java -cp target/ElastiCacheIAMAuthDemoApp-1.0-SNAPSHOT.jar com.amazon.elasticache.IAMAuthTokenGeneratorApp --region ***ap-south-1*** --replication-group-id ***myredis*** --user-id ***avinash***
+Test connection using Demo-Application
+java -jar target/ElastiCacheIAMAuthDemoApp-1.0-SNAPSHOT.jar --redis-host ***master.myredis.77otcp.aps1.cache.amazonaws.com*** --region ***ap-south-1*** --replication-group-id ***myredis*** --user-id ***avinash*** --tls
